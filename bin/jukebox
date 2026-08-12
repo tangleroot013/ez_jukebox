@@ -6,5 +6,8 @@ case "$cmd" in
   organize) exec python3 "$(dirname "$0")/../src/organize_music.py" "$@" ;;
   cleanup) exec python3 "$(dirname "$0")/../src/cleanup_music_library.py" "$@" ;;
   build) exec python3 "$(dirname "$0")/../src/build_music_library.py" "$@" ;;
-  *) echo "usage: jukebox {play|organize|cleanup|build}"; exit 1 ;;
+  validate) exec python3 "$(dirname "$0")/../src/config_validator.py" "$@" ;;
+  resolve) exec python3 "$(dirname "$0")/../src/path_resolver.py" "$@" ;;
+  tune) exec python3 "$(dirname "$0")/../src/optimize_playback.py" "$@" ;;
+  *) echo "usage: jukebox {play|organize|cleanup|build|validate|resolve|tune}"; exit 1 ;;
 esac
