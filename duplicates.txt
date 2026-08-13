@@ -1,0 +1,9 @@
+🎵 ez_jukebox Deduplication Executor (DRY-RUN)
+Reading manifest: music_manifest.json
+
+[info] Queued 6546 duplicate hash groups (7388 duplicate files total) -- mode=DRY-RUN
+
+--- Summary ---
+Duplicate Groups : 6546
+Redundant Files  : 7388
+Execution Mode   : DRY-RUN
