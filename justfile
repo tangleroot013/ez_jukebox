@@ -65,3 +65,7 @@ cleanup *ARGS:
 
 build-library:
 	python3 src/build_music_library.py
+
+# Build or refresh content-hash manifest from external drive
+build-manifest PATH="":
+	python3 src/build_manifest.py {{ if PATH != "" { PATH } else { "" } }}
