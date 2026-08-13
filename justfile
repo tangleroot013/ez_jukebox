@@ -73,3 +73,7 @@ build-manifest PATH="":
 # Run live monitor
 monitor:
 	python3 scripts/monitor_jukebox.py
+
+# Run automated pipeline verification suite
+verify:
+    bash test/verify_suite/run_verification.sh
