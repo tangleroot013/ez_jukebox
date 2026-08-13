@@ -79,3 +79,7 @@ verify:
     bash test/verify_suite/run_verification.sh
 
 # Run automated pipeline verification suite
+
+# Show quick-start command reference
+hints:
+	@python3 scripts/show_hints.py
