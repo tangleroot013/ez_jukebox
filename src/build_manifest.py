@@ -1,95 +1,76 @@
 #!/usr/bin/env python3
-# ==============================================================================
-# ez_jukebox - Content-Based Manifest Generator
-# ==============================================================================
 """
-Walks an external music library directory, computes SHA-256 hashes of all audio
-file contents, detects duplicate tracks, and outputs a clean music_manifest.json.
+ez_jukebox Manifest Builder
+Scans audio library and generates a path -> SHA-256 hash manifest.
 """
 
-import json
-import hashlib
 import os
 import sys
+import json
+import hashlib
+import argparse
 from pathlib import Path
-from collections import defaultdict
 
-DEFAULT_DRIVE_PATH = "/mnt/chromeos/removable/CarterMedia"
-DEFAULT_MANIFEST_OUT = os.path.expanduser("~/github_projects/ez_jukebox/music_manifest.json")
-AUDIO_EXTS = {'.mp3', '.flac', '.wav', '.aac', '.m4a', '.ogg', '.opus', '.alac'}
+AUDIO_EXTENSIONS = {'.mp3', '.flac', '.m4a', '.aac', '.ogg', '.wav', '.opus', '.aiff', '.alac'}
 
-def hash_file_content(filepath: str, chunk_size: int = 65536) -> str | None:
-    """Compute SHA-256 hash of file content in chunks (memory-efficient)."""
-    sha = hashlib.sha256()
+def calculate_sha256(filepath, chunk_size=65536):
+    sha256 = hashlib.sha256()
     try:
         with open(filepath, 'rb') as f:
-            while True:
-                chunk = f.read(chunk_size)
-                if not chunk:
-                    break
-                sha.update(chunk)
-        return sha.hexdigest()
-    except (OSError, IOError) as e:
-        print(f"⚠️ Skipped {filepath}: {e}")
+            for chunk in iter(lambda: f.read(chunk_size), b''):
+                sha256.update(chunk)
+        return sha256.hexdigest()
+    except Exception as e:
         return None
 
-def scan_and_build_manifest(drive_path: str):
-    """Walk drive, hash audio files, return manifest dict and duplicates."""
+def build_manifest(library_path, output_path):
+    library = Path(library_path)
+    if not library.exists():
+        print(f"❌ Error: Library path '{library_path}' does not exist.")
+        return None, None
+
+    print(f"🔍 Scanning {library_path} for audio files...")
     manifest = {}
-    duplicates = defaultdict(list)
-    skipped = 0
-    total = 0
+    indexed_count = 0
+    skipped_count = 0
 
-    print(f"🔍 Scanning {drive_path} for audio files...")
-
-    for root, _, files in os.walk(drive_path):
+    for root, _, files in os.walk(library):
         for file in files:
-            total += 1
-            filepath = os.path.join(root, file)
             ext = Path(file).suffix.lower()
+            if ext in AUDIO_EXTENSIONS:
+                full_path = os.path.join(root, file)
+                file_hash = calculate_sha256(full_path)
+                
+                if file_hash:
+                    manifest[full_path] = file_hash
+                    indexed_count += 1
+                    if indexed_count % 100 == 0:
+                        print(f"   ✓ Indexed {indexed_count} audio files...")
+                else:
+                    skipped_count += 1
 
-            if ext not in AUDIO_EXTS:
-                continue
+    print(f"\n✅ Indexing complete! Recorded {indexed_count} total file paths ({skipped_count} skipped).")
+    return manifest
 
-            file_hash = hash_file_content(filepath)
-            if not file_hash:
-                skipped += 1
-                continue
-
-            if file_hash in manifest:
-                duplicates[file_hash].append(filepath)
-            else:
-                manifest[file_hash] = filepath
-
-            if len(manifest) % 100 == 0 and len(manifest) > 0:
-                print(f"   ✓ Indexed {len(manifest)} unique audio files...")
-
-    return manifest, duplicates, skipped
+def write_manifest(manifest, output_path):
+    try:
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump(manifest, f, indent=2, ensure_ascii=False)
+        print(f"💾 Manifest written to: {output_path}")
+        return True
+    except Exception as e:
+        print(f"❌ Error writing manifest: {e}")
+        return False
 
 def main():
-    drive_path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_DRIVE_PATH
-    manifest_out = DEFAULT_MANIFEST_OUT
+    parser = argparse.ArgumentParser(description="ez_jukebox Manifest Builder")
+    parser.add_argument("--library-path", default="/mnt/chromeos/removable/CarterMedia", help="Path to audio library")
+    parser.add_argument("--output-path", default="music_manifest.json", help="Path to output JSON manifest")
+    args = parser.parse_args()
 
-    if not os.path.exists(drive_path):
-        print(f"❌ Error: Drive path '{drive_path}' does not exist or is not shared with Linux.")
-        sys.exit(1)
-
-    manifest, dups, skipped = scan_and_build_manifest(drive_path)
-
-    if manifest:
-        os.makedirs(os.path.dirname(manifest_out), exist_ok=True)
-        with open(manifest_out, 'w', encoding='utf-8') as f:
-            json.dump(manifest, f, indent=2)
-
-        print(f"\n✅ Manifest successfully saved to: {manifest_out}")
-        print(f"   🎵 Unique tracks indexed: {len(manifest)}")
-        print(f"   ⚠️ Skipped/unreadable files: {skipped}")
-        if dups:
-            print(f"   🔄 Duplicate content hashes detected: {len(dups)}")
-            for hash_key, paths in list(dups.items())[:3]:
-                print(f"      • {hash_key[:16]}... → {len(paths)} duplicate copies")
-    else:
-        print(f"❌ No supported audio files found in {drive_path}")
+    manifest = build_manifest(args.library_path, args.output_path)
+    if manifest and write_manifest(manifest, args.output_path):
+        print("🦆 Done! Library manifest ready for deduplication.")
 
 if __name__ == "__main__":
     main()
