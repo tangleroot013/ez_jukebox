@@ -1,0 +1,65 @@
+{
+  "name": "ez_jukebox",
+  "kind": "internal-project-manifest",
+  "description": "Chromebook Crostini music library automation: deduplication + MPD integration + helper tooling.",
+  "repoRoot": ".",
+  "version": "0.1.0",
+  "directories": {
+    "bin": "bin",
+    "config": "config",
+    "docs": "docs",
+    "scripts": "scripts",
+    "src": "src",
+    "test": "test"
+  },
+  "files": {
+    "readme": "README.md",
+    "manifest": "music_manifest.json",
+    "dedupDuplicatesList": "duplicates.txt"
+  },
+  "buildAndRun": {
+    "orchestration": {
+      "type": "just",
+      "justfile": "justfile",
+      "primarySourceOfTruth": "just verify"
+    },
+    "entrypoints": [
+      "scripts/launch.sh",
+      "scripts/show_hints.py",
+      "scripts/ez_find_orphans.sh",
+      "scripts/rebuild_manifest.py",
+      "scripts/check_integrity.py",
+      "scripts/dedup_triage.py",
+      "scripts/recover.py"
+    ],
+    "mpd": {
+      "serviceName": "mpd",
+      "systemdScope": "user"
+    }
+  },
+  "qualityAndVerification": {
+    "primaryTarget": "just verify",
+    "testsPath": "test"
+  },
+  "runtimeSignals": {
+    "expectedCommands": [
+      "systemctl --user",
+      "journalctl --user -u mpd",
+      "mpc update",
+      "mpc stats",
+      "mpc listall"
+    ],
+    "expectedArtifacts": [
+      "music_manifest.json",
+      "duplicates.txt",
+      "orphans_list.txt",
+      "reports/integrity_report.json",
+      "reports/dedup_triage.html",
+      "reports/dedup_triage.json"
+    ]
+  },
+  "notes": [
+    "Keep this file updated when you add/remove major orchestration entrypoints or artifacts.",
+    "If you introduce new generated JSON reports, add them under `files` or `generatedArtifacts`."
+  ]
+}
