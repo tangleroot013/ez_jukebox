@@ -77,3 +77,7 @@ monitor:
 # Run automated pipeline verification suite
 verify:
     bash test/verify_suite/run_verification.sh
+
+# Run automated pipeline verification suite
+verify:
+    bash test/verify_suite/run_verification.sh
