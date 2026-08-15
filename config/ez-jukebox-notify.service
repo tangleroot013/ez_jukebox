@@ -1,0 +1,13 @@
+[Unit]
+Description=ez_jukebox Notification & Infobox Daemon
+After=mpd.service
+Requires=mpd.service
+
+[Service]
+Type=simple
+ExecStart=%h/github_projects/ez_jukebox/scripts/ez_notify.sh
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target
