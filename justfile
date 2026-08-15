@@ -1,21 +1,21 @@
 set shell := ["bash", "-eu", "-o", "pipefail", "-c"]
 
 verify:
-	python3 scripts/check_integrity.py
-	python3 scripts/dedup_triage.py
+    python3 scripts/check_integrity.py
+    python3 scripts/dedup_triage.py
 
 dedup-triage:
-	python3 scripts/dedup_triage.py
+    python3 scripts/dedup_triage.py
 
 check-integrity:
-	python3 scripts/check_integrity.py
+    python3 scripts/check_integrity.py
 
 recover:
-	python3 scripts/recover.py
+    python3 scripts/recover.py
 
 git-sync:
-	git add project.json justfile scripts src docs test README.md .gitignore
-	git commit -m "Add integrity, dedup triage, and recovery tooling" || true
+    git add project.json justfile scripts src docs test README.md .gitignore
+    git commit -m "Add integrity, dedup triage, and recovery tooling" || true
 
 # --- ez_jukebox Utilities ---
 
@@ -34,18 +34,6 @@ mix QUERY:
 # Run system backup
 backup:
     ./scripts/ez_backup.sh
-
-# Process and import staged audio from ~/Music/incoming
-intake:
-    ./scripts/ez_intake.sh
-
-# Export MPD playlists to config/playlists for Git backup
-export-playlists:
-    ./scripts/ez_playlists.sh export
-
-# Restore Git-backed playlists into MPD
-import-playlists:
-    ./scripts/ez_playlists.sh import
 
 # Process and import staged audio from ~/Music/incoming
 intake:
