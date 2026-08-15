@@ -96,3 +96,26 @@ stress-test-audio:
     @sleep 60
     @mpc status
     @echo "[ok] stress test complete -- no script-level errors detected"
+
+# --- Audio Status & Lifecycle ---
+
+# Show current MPD and PipeWire status
+status:
+	@echo "=== MPD Status ==="
+	@mpc status || echo "[warn] MPD not responding"
+	@echo ""
+	@echo "=== Audio Services ==="
+	@systemctl --user status mpd pipewire wireplumber --no-pager || true
+
+# Start audio services
+start:
+	systemctl --user restart mpd pipewire wireplumber pipewire-pulse
+	@until mpc status >/dev/null 2>&1; do sleep 0.2; done
+	mpc play
+
+# Stop audio services
+stop:
+	systemctl --user stop mpd pipewire wireplumber pipewire-pulse
+
+# Restart audio services
+restart: stop start
