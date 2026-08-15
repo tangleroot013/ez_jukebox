@@ -70,3 +70,7 @@ notify-test:
 # Pull-style API for now_playing.json (localhost only)
 now-playing-api:
     ./scripts/ez_now_playing_api.py
+
+# Launch live terminal UI widget for now_playing API
+tui:
+    ./scripts/ez_now_playing_tui.py
