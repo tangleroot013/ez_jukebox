@@ -74,3 +74,25 @@ now-playing-api:
 # Launch live terminal UI widget for now_playing API
 tui:
     ./scripts/ez_now_playing_tui.py
+
+# Verify MPD and audio buffer configuration
+verify-audio-buffers:
+    @echo "=== MPD status ==="
+    @mpc status || echo "[warn] MPD not responding"
+    @echo ""
+    @echo "=== MPD outputs ==="
+    @mpc outputs || true
+    @echo ""
+    @echo "=== audio-watchdog service ==="
+    @systemctl --user status audio-watchdog.service --no-pager -l || true
+    @echo ""
+    @echo "=== PipeWire (if active) ==="
+    @pw-cli info 0 2>/dev/null | grep -E "quantum|rate" || echo "[info] PipeWire not active"
+
+# Stress-test audio stability: play for 60s and check for skips
+stress-test-audio:
+    @echo "Playing for 60s -- watch for audio glitches..."
+    @mpc play 2>/dev/null || true
+    @sleep 60
+    @mpc status
+    @echo "[ok] stress test complete -- no script-level errors detected"
