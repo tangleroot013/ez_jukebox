@@ -62,3 +62,7 @@ dedup-policy:
 # Audit library metadata tags for missing fields
 tag-lint:
     python3 scripts/ez_tag_lint.py
+
+# Restart daemon and confirm now_playing.json updates
+notify-test:
+    ./scripts/ez_notify_test.sh
