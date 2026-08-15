@@ -58,3 +58,7 @@ now-playing:
 # Evaluate duplicate groups and recommend files to keep
 dedup-policy:
     python3 scripts/ez_dedup_policy.py
+
+# Audit library metadata tags for missing fields
+tag-lint:
+    python3 scripts/ez_tag_lint.py
