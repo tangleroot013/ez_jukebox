@@ -58,3 +58,11 @@ export-playlists:
 # Restore Git-backed playlists into MPD
 import-playlists:
     ./scripts/ez_playlists.sh import
+
+# Run system and socket environment pre-flight check
+preflight:
+    ./scripts/ez_preflight.sh
+
+# Run live 'now_playing.json' exporter for widgets/dashboards
+now-playing:
+    ./scripts/ez_now_playing.sh
