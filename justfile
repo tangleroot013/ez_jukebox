@@ -46,3 +46,15 @@ export-playlists:
 # Restore Git-backed playlists into MPD
 import-playlists:
     ./scripts/ez_playlists.sh import
+
+# Process and import staged audio from ~/Music/incoming
+intake:
+    ./scripts/ez_intake.sh
+
+# Export MPD playlists to config/playlists for Git backup
+export-playlists:
+    ./scripts/ez_playlists.sh export
+
+# Restore Git-backed playlists into MPD
+import-playlists:
+    ./scripts/ez_playlists.sh import
