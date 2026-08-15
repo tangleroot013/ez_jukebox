@@ -54,3 +54,7 @@ preflight:
 # Run live 'now_playing.json' exporter for widgets/dashboards
 now-playing:
     ./scripts/ez_now_playing.sh
+
+# Evaluate duplicate groups and recommend files to keep
+dedup-policy:
+    python3 scripts/ez_dedup_policy.py
