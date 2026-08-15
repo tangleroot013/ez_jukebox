@@ -66,3 +66,7 @@ tag-lint:
 # Restart daemon and confirm now_playing.json updates
 notify-test:
     ./scripts/ez_notify_test.sh
+
+# Pull-style API for now_playing.json (localhost only)
+now-playing-api:
+    ./scripts/ez_now_playing_api.py
