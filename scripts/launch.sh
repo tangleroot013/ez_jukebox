@@ -8,7 +8,7 @@ set -e
 clear
 
 # Render quick hint reference
-python3 scripts/show_hints.py
+python3 show_hints.py
 
 # Ensure underlying MPD service is running
 if ! systemctl --user is-active --quiet mpd; then
@@ -17,3 +17,6 @@ if ! systemctl --user is-active --quiet mpd; then
 fi
 
 echo -e "\033[32m✅ Service status verified. System ready.\033[0m\n"
+
+echo "🚀 Starting tray monitor..."
+python3 monitor_jukebox.py &
