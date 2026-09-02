@@ -5,6 +5,31 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 ICON_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/icons"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/ez_jukebox"
+
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Install the EZ Jukebox shuffle launcher into the local application menu.
+
+Options:
+  -h, --help        Show this help
+EOF
+}
+
+case "${1:-}" in
+    -h|--help)
+        usage
+        exit 0
+        ;;
+    "")
+        ;;
+    *)
+        echo "Error: unknown option '$1'. Use --help for usage." >&2
+        exit 2
+        ;;
+esac
 
 echo "[1/5] stopping the old tray process..."
 pkill -f monitor_jukebox.py 2>/dev/null && echo "  -> killed running instance" || echo "  -> nothing running"
@@ -12,6 +37,7 @@ pkill -f monitor_jukebox.py 2>/dev/null && echo "  -> killed running instance" |
 echo ""
 echo "[2/5] installing shelf icon..."
 mkdir -p "$ICON_DIR"
+mkdir -p "$CONFIG_DIR"
 if [[ -f "$SCRIPT_DIR/../assets/ez_jukebox_icon.png" ]]; then
     cp "$SCRIPT_DIR/../assets/ez_jukebox_icon.png" "$ICON_DIR/ez_jukebox_icon.png"
     echo "  -> $ICON_DIR/ez_jukebox_icon.png"
@@ -20,60 +46,7 @@ else
 fi
 
 echo ""
-echo "[3/5] installing shuffle wrapper script..."
-cat > "$SCRIPT_DIR/ez_jukebox_shuffle.sh" <<'WRAP_EOF'
-#!/usr/bin/env bash
-# ez_jukebox_shuffle.sh - start or advance the shelf player's managed queue
-set -euo pipefail
-
-DATA_DIR="${HOME}/.local/share/ez_jukebox"
-LOG="${DATA_DIR}/shuffle.log"
-PRELOAD_COUNT=3
-mkdir -p "$DATA_DIR"
-
-log() {
-    printf '%s: %s\n' "$(date)" "$*" >> "$LOG"
-}
-
-if ! command -v mpc >/dev/null 2>&1; then
-    log "[error] mpc not found"
-    exit 1
-fi
-
-if ! mpc status >/dev/null 2>&1; then
-    log "[warn] MPD not responding -- restarting"
-    systemctl --user restart mpd 2>/dev/null || true
-    sleep 1
-fi
-
-current_pos="$(mpc current -f '%position%' 2>/dev/null || true)"
-queue_len="$(mpc playlist 2>/dev/null | wc -l)"
-
-if [[ -z "$current_pos" || "$queue_len" -eq 0 ]]; then
-    mapfile -t tracks < <(mpc listall | shuf -n "$((PRELOAD_COUNT + 1))")
-    if [[ "${#tracks[@]}" -eq 0 ]]; then
-        log "[error] MPD library is empty"
-        exit 1
-    fi
-    mpc -q clear
-    mpc -q random off
-    for track in "${tracks[@]}"; do
-        [[ -n "$track" ]] && mpc -q add "$track"
-    done
-    mpc -q play 1
-else
-    mpc -q next
-    current_pos=$((current_pos + 1))
-    upcoming=$((queue_len - current_pos))
-    needed=$((PRELOAD_COUNT - upcoming))
-    for ((index = 0; index < needed; index++)); do
-        track="$(mpc listall | shuf -n 1)"
-        [[ -n "$track" ]] && mpc -q add "$track"
-    done
-fi
-
-log "now playing: $(mpc current 2>/dev/null || true); upcoming target: $PRELOAD_COUNT"
-WRAP_EOF
+echo "[3/5] enabling shuffle launcher..."
 chmod +x "$SCRIPT_DIR/ez_jukebox_shuffle.sh"
 echo "  -> $SCRIPT_DIR/ez_jukebox_shuffle.sh"
 
@@ -86,7 +59,7 @@ cat > "$DESKTOP_FILE" <<DESKTOP_EOF
 Type=Application
 Name=ez_jukebox Shuffle
 Comment=Launch background shuffle playback or skip to the next random track
-Exec=${SCRIPT_DIR}/ez_jukebox_shuffle.sh
+Exec="${SCRIPT_DIR}/ez_jukebox_shuffle.sh"
 Icon=${ICON_DIR}/ez_jukebox_icon.png
 Terminal=false
 Categories=Audio;Music;Player;

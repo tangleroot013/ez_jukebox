@@ -10,6 +10,13 @@ dedup-triage:
 check-integrity:
     python3 scripts/check_integrity.py
 
+verify-shuffle:
+    bash -n scripts/ez_jukebox_shuffle.sh scripts/install_shuffle_launcher.sh
+    git diff --check -- scripts/ez_jukebox_shuffle.sh scripts/install_shuffle_launcher.sh
+
+test-shuffle:
+    bash test/verify_suite/test_shuffle.sh
+
 recover:
     python3 scripts/recover.py
 
