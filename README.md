@@ -109,6 +109,16 @@ Install the desktop shuffle launcher:
 bash scripts/install_shuffle_launcher.sh
 ```
 
+Install the optional now-playing services from this checkout:
+
+```bash
+bash scripts/install_user_services.sh
+```
+
+The installer resolves the repository path at runtime, so the services work
+after cloning to a different directory. On systems without user systemd it
+still writes the units and prints a warning instead of failing the install.
+
 Find **EZ Jukebox Shuffle** in the application menu and pin it to the shelf,
 taskbar, or favorites. The installer is self-locating and uses XDG paths for
 the application entry and icon.
@@ -165,6 +175,7 @@ the MPD configuration or restart the service. Set
 | `just notify` | Run the now-playing notification daemon. |
 | `just now-playing` | Export now-playing JSON on MPD player events. |
 | `just now-playing-api` | Serve now-playing JSON on localhost. |
+| `just install-services` | Install the portable user systemd notification and API units. |
 | `just tui` | Launch the terminal now-playing widget. |
 | `just export-playlists` / `just import-playlists` | Back up or restore MPD playlists. |
 | `just sleep 45` | Start a playback sleep timer. |
@@ -278,6 +289,7 @@ the tree doubles as a file map.
 │   ├── ez-jukebox-notify.service                   # User systemd unit for notifications.
 │   ├── ez-jukebox-now-playing-api.service          # User systemd unit for local now-playing API.
 │   ├── mpd.conf                                    # Tracked MPD playback/resource configuration.
+│   ├── pipewire/10-crostini-buffer.conf             # 4096-sample PipeWire focus-switch buffer drop-in.
 │   └── ncmpcpp/config                              # ncmpcpp terminal player configuration.
 ├── duplicates.txt                                  # Duplicate-group input/report artifact.
 ├── justfile                                        # Project command recipes and orchestration.
@@ -327,6 +339,7 @@ the tree doubles as a file map.
 │   ├── ez_tag_lint.py                               # Audits music metadata tags.
 │   ├── find_orphans_manifest.py                     # Compares media files with manifest entries.
 │   ├── install_shuffle_launcher.sh                  # Installs the XDG desktop launcher and icon.
+│   ├── install_user_services.sh                     # Installs checkout-portable user systemd units.
 │   ├── launch.sh                                    # General project launcher.
 │   ├── launch_ez_jukebox.sh                         # Starts the ez_jukebox application workflow.
 │   ├── monitor_jukebox.py                           # Historical monitor/tray implementation.

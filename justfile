@@ -62,6 +62,10 @@ import-playlists:
 preflight:
     ./scripts/ez_preflight.sh
 
+# Install portable user-scoped notification and API services
+install-services:
+    ./scripts/install_user_services.sh
+
 # Run live 'now_playing.json' exporter for widgets/dashboards
 now-playing:
     ./scripts/ez_now_playing.sh
@@ -135,7 +139,7 @@ restart: stop start
 
 # Canonical manifest-driven dedup (dry-run by default, reversible quarantine moves)
 dedup-execute:
-    python3 scripts/dedup_executor.py music_manifest.json
+    python3 scripts/dedup_executor.py "$${XDG_DATA_HOME:-$${HOME}/.local/share}/ez_jukebox/music_manifest.json"
 
 dedup-execute-live:
-    EXECUTE=1 python3 scripts/dedup_executor.py music_manifest.json
+    EXECUTE=1 python3 scripts/dedup_executor.py "$${XDG_DATA_HOME:-$${HOME}/.local/share}/ez_jukebox/music_manifest.json"
