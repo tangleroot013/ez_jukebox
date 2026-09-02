@@ -33,11 +33,9 @@ filesystem_charset  "UTF-8"
 auto_update         "no"
 
 # ── Crostini buffer tuning ──────────────────────────────────────────────────
-# CrosVM scheduler jitter can run 20-80ms; buffers must exceed worst-case gap.
-audio_buffer_size   "16384"   # 16 MB decode ring buffer
-buffer_before_play  "15%"     # pre-fill 2.4 MB before first frame
+# max_output_buffer_size is supported by modern MPD builds.
+max_output_buffer_size     "16384"
 
-gapless_mp3_playback      "yes"
 replaygain                "auto"
 replaygain_preamp         "0"
 replaygain_missing_preamp "0"

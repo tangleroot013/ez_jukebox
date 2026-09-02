@@ -76,6 +76,27 @@ the same playback policy; adapt paths if your MPD service uses
 `${XDG_CONFIG_HOME:-~/.config}/mpd` instead. Runtime manifests and reports live under
 `${XDG_DATA_HOME:-~/.local/share}/ez_jukebox/`; they are not repository files.
 
+It also writes `${XDG_CONFIG_HOME:-~/.config}/pipewire/pipewire.conf.d/10-crostini-buffer.conf`
+with a conservative 4096-sample quantum, about 85 ms at 48 kHz. The native
+Pulse socket is detected from `PULSE_SERVER` or
+`${XDG_RUNTIME_DIR}/pulse/native`; the setup never assumes UID 1000.
+
+Useful setup controls:
+
+```bash
+bash mpd_audiophile_setup.sh --dry-run
+bash mpd_audiophile_setup.sh --library /path/to/music --no-restart
+bash mpd_audiophile_setup.sh --quantum 8192
+```
+
+`--dry-run` changes nothing. `--no-restart` writes the configuration but leaves
+the current MPD process untouched; use it when testing or when another service
+manager controls MPD. The first shuffle-icon launch applies the normal setup
+once, including the PipeWire drop-in, while the completion marker prevents
+repeated rewrites and restarts. Increase the quantum to `8192` only after
+confirming that 4096 still underruns during focus switches; larger values add
+latency and do not restore RTKit privileges.
+
 Import existing music, or place new files in `~/Music/incoming` and run:
 
 ```bash
