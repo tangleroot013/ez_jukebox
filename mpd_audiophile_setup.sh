@@ -142,6 +142,8 @@ audio_output {
     type "pulse"
     name "Crostini CRAS Output"
     mixer_type "software"${SERVER_LINE}
+    buffer_time "600000"
+    fragment_size "32768"
 }
 CONF_EOF
 chmod 600 "$TEMP_CONF"
