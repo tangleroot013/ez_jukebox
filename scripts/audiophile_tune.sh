@@ -6,11 +6,10 @@ set -euo pipefail
 MPD_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/mpd"
 MPD_CONF="${MPD_HOME}/mpd.conf"
 PULSE_CONF="${HOME}/.config/pulse/daemon.conf"
-OVERRIDE_DIR="${HOME}/.config/systemd/user/mpd.service.d"
 LIB="${EZ_JUKEBOX_LIBRARY:-$HOME/Music-library}"
 RUNTIME="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
-mkdir -p "$(dirname "$MPD_CONF")" "$MPD_HOME/playlists" "$OVERRIDE_DIR"
+mkdir -p "$(dirname "$MPD_CONF")" "$MPD_HOME/playlists"
 
 # detect pulse socket
 SERVER_LINE=""
@@ -67,8 +66,6 @@ default-sample-format        = s16le
 default-fragments            = 8
 default-fragment-size-msec   = 75
 
-high-priority                = yes
-nice-level                   = -11
 realtime-scheduling          = no
 
 avoid-resampling             = no
@@ -76,20 +73,10 @@ resample-method              = speex-float-3
 
 exit-idle-time               = -1
 PULSE
-echo "[ok] pulse daemon.conf: 8 x 75ms = 600ms fragment buffer, nice=-11"
+echo "[ok] pulse daemon.conf: 8 x 75ms = 600ms fragment buffer"
 
 echo ""
-echo "[3/4] MPD systemd priority override..."
-cat > "${OVERRIDE_DIR}/50-audiophile.conf" <<UNIT
-[Service]
-Nice=-10
-Environment=PULSE_LATENCY_MSEC=300
-Environment=PULSE_PROP_media.role=music
-UNIT
-echo "[ok] override: Nice=-10, PULSE_LATENCY_MSEC=300, media.role=music"
-
-echo ""
-echo "[4/4] applying..."
+echo "[3/3] applying..."
 systemctl --user daemon-reload
 
 # Restart PulseAudio to pick up daemon.conf
@@ -117,9 +104,7 @@ cat <<SUMMARY
   MPD pre-fill:       15% (2.4 MB)
   PulseAudio sink:    600 ms  (buffer_time)
   PA fragments:       8 × 75 ms = 600 ms
-  PULSE_LATENCY_MSEC: 300
-  MPD nice:          -10
-  PA nice:           -11
+    RTKit/realtime:    disabled; relies on buffering instead
 
 === If skips persist ===
   1. tail -f ~/.mpd/mpd.log   # look for "buffer underrun"

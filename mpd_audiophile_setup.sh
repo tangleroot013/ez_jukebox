@@ -174,6 +174,12 @@ if ! command -v systemctl >/dev/null 2>&1; then
 fi
 
 systemctl --user daemon-reload 2>/dev/null || true
+for audio_service in pipewire pipewire-pulse wireplumber; do
+    if systemctl --user is-active --quiet "$audio_service" 2>/dev/null; then
+        systemctl --user restart "$audio_service" 2>/dev/null || \
+            echo "[warn] could not restart $audio_service; restart it manually"
+    fi
+done
 if systemctl --user restart mpd 2>/dev/null; then
     sleep 1
     echo "[ok] mpd restarted"

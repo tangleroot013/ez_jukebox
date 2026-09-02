@@ -99,6 +99,8 @@ verify-audio-buffers:
     @echo ""
     @echo "=== PipeWire (if active) ==="
     @pw-cli info 0 2>/dev/null | grep -E "quantum|rate" || echo "[info] PipeWire not active"
+    @echo "=== Configured PipeWire quantum ==="
+    @grep -E "default.clock.(min-)?quantum" "$${XDG_CONFIG_HOME:-$${HOME}/.config}/pipewire/pipewire.conf.d/10-crostini-buffer.conf" 2>/dev/null || echo "[info] Crostini PipeWire drop-in not installed"
 
 # Stress-test audio stability: play for 60s and check for skips
 stress-test-audio:

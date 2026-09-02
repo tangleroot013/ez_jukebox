@@ -194,6 +194,10 @@ just stress-test-audio
 htop -d 2 -p $(pgrep -d, -f 'mpd|pipewire|wireplumber')
 ```
 
+`just verify-audio-buffers` reports both the live PipeWire quantum and the
+configured drop-in. Restarting the audio services can interrupt current audio,
+so apply setup changes before starting a listening session.
+
 ## Architecture
 
 ```mermaid
