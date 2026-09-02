@@ -4,8 +4,7 @@ set -euo pipefail
 
 DATA_DIR="${HOME}/.local/share/ez_jukebox"
 LOG="${DATA_DIR}/shuffle.log"
-STATE="${DATA_DIR}/shuffle-current"
-PRELOAD=3
+PRELOAD_COUNT=3
 mkdir -p "$DATA_DIR"
 
 log() {
@@ -23,33 +22,30 @@ if ! mpc status >/dev/null 2>&1; then
     sleep 1
 fi
 
-current="$(mpc current 2>/dev/null || true)"
+current_pos="$(mpc current -f '%position%' 2>/dev/null || true)"
+queue_len="$(mpc playlist 2>/dev/null | wc -l)"
 
-if [[ -z "$current" || ! -s "$STATE" ]]; then
-    mapfile -t tracks < <(mpc listall | shuf -n "$((PRELOAD + 1))")
+if [[ -z "$current_pos" || "$queue_len" -eq 0 ]]; then
+    mapfile -t tracks < <(mpc listall | shuf -n "$((PRELOAD_COUNT + 1))")
     if [[ "${#tracks[@]}" -eq 0 ]]; then
         log "[error] MPD library is empty"
         exit 1
     fi
-    mpc clear >/dev/null
-    printf '%s\n' "${tracks[@]}" | while IFS= read -r track; do
-        [[ -n "$track" ]] && mpc add "$track" >/dev/null
+    mpc -q clear
+    mpc -q random off
+    for track in "${tracks[@]}"; do
+        [[ -n "$track" ]] && mpc -q add "$track"
     done
-    mpc random off >/dev/null
-    mpc repeat off >/dev/null
-    mpc play 1 >/dev/null
+    mpc -q play 1
 else
-    mpc next >/dev/null
+    mpc -q next
+    current_pos=$((current_pos + 1))
+    upcoming=$((queue_len - current_pos))
+    needed=$((PRELOAD_COUNT - upcoming))
+    for ((index = 0; index < needed; index++)); do
+        track="$(mpc listall | shuf -n 1)"
+        [[ -n "$track" ]] && mpc -q add "$track"
+    done
 fi
 
-position="$(mpc status | sed -n 's/.*#\([0-9][0-9]*\)\/[0-9][0-9]*.*/\1/p' | head -n 1)"
-position="${position:-1}"
-while [[ "$(mpc playlist | wc -l)" -lt "$((position + PRELOAD))" ]]; do
-    track="$(mpc listall | shuf -n 1)"
-    [[ -z "$track" ]] && break
-    mpc add "$track" >/dev/null
-done
-
-current="$(mpc current 2>/dev/null || true)"
-printf '%s' "$current" > "$STATE"
-log "now playing: ${current:-none}; upcoming target: $PRELOAD"
+log "now playing: $(mpc current 2>/dev/null || true); upcoming target: $PRELOAD_COUNT"
