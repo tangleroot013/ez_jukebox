@@ -6,6 +6,7 @@ verify:
 
 test:
     just test-shuffle
+    bash test/verify_suite/test_integrity.sh
     just verify-shuffle
 
 dedup-triage:

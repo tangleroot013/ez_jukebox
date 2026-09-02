@@ -23,3 +23,6 @@ jobs:
 
       - name: Run offline shuffle unit tests
         run: just test-shuffle
+
+      - name: Run offline integrity unit tests
+        run: bash test/verify_suite/test_integrity.sh

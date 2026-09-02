@@ -2,69 +2,115 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import sys
 from pathlib import Path
+from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from ez_jukebox.manifest import load_json, save_json
-from ez_jukebox.paths import MANIFEST_PATH, REPORTS_DIR, ensure_dirs
+from ez_jukebox.manifest import load_json, save_json  # noqa: E402
+from ez_jukebox.paths import (  # noqa: E402
+    MANIFEST_PATH,
+    REPORTS_DIR,
+    ensure_dirs,
+)
+
+SHA256_RE = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
 def sha256_file(path: Path, chunk_size: int = 1024 * 1024) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        while True:
-            chunk = f.read(chunk_size)
-            if not chunk:
-                break
-            h.update(chunk)
-    return h.hexdigest()
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        while chunk := file.read(chunk_size):
+            digest.update(chunk)
+    return digest.hexdigest()
 
-def main():
+
+def make_result(path: Path, status: str, **extra: Any) -> dict[str, Any]:
+    return {"path": str(path), "status": status, **extra}
+
+
+def main() -> int:
     ensure_dirs()
-    if not MANIFEST_PATH.exists():
-        print(f"Integrity check failed: manifest not found at {MANIFEST_PATH}")
-        raise SystemExit(1)
+    if not MANIFEST_PATH.is_file():
+        print(
+            f"Integrity check failed: manifest not found at {MANIFEST_PATH}",
+            file=sys.stderr,
+        )
+        return 1
 
-    manifest = load_json(MANIFEST_PATH)
+    try:
+        manifest = load_json(MANIFEST_PATH)
+    except (OSError, ValueError) as exc:
+        print(
+            f"Integrity check failed: could not read manifest: {exc}",
+            file=sys.stderr,
+        )
+        return 1
+
     files = manifest.get("files") if isinstance(manifest, dict) else None
     if not isinstance(files, dict):
         print(
-            f"Integrity check failed: invalid manifest schema at {MANIFEST_PATH}"
+            "Integrity check failed: invalid manifest schema at "
+            f"{MANIFEST_PATH}",
+            file=sys.stderr,
         )
-        raise SystemExit(1)
+        return 1
 
-    results = []
-    for path, expected in files.items():
-        p = Path(path).expanduser()
-        if not p.exists():
-            results.append({"path": str(p), "status": "missing"})
+    results: list[dict[str, Any]] = []
+    for raw_path, expected in files.items():
+        path = Path(str(raw_path)).expanduser()
+        if not isinstance(expected, str) or not SHA256_RE.fullmatch(expected):
+            results.append(
+                make_result(path, "invalid_manifest_hash", expected=expected)
+            )
             continue
-        actual = sha256_file(p)
-        status = "ok" if actual == expected else "mismatch"
+
+        if not path.is_file():
+            status = "missing" if not path.exists() else "not_a_file"
+            results.append(make_result(path, status, expected=expected))
+            continue
+
+        try:
+            actual = sha256_file(path)
+        except OSError as exc:
+            results.append(
+                make_result(
+                    path,
+                    "unreadable",
+                    expected=expected,
+                    error=str(exc),
+                )
+            )
+            continue
+
+        status = "ok" if actual.lower() == expected.lower() else "mismatch"
         results.append(
-            {
-                "path": str(p),
-                "status": status,
-                "expected": expected,
-                "actual": actual,
-            }
+            make_result(path, status, expected=expected, actual=actual)
         )
 
-    out = REPORTS_DIR / "integrity_report.json"
-    save_json(out, {"results": results})
-    print(f"Wrote {out}")
+    report_path = REPORTS_DIR / "integrity_report.json"
+    try:
+        save_json(report_path, {"results": results})
+    except OSError as exc:
+        print(
+            f"Integrity check failed: could not write report: {exc}",
+            file=sys.stderr,
+        )
+        return 1
+    print(f"Wrote {report_path}")
 
-    bad = [r for r in results if r["status"] != "ok"]
-    if bad:
+    failures = [entry for entry in results if entry["status"] != "ok"]
+    if failures:
         print("Integrity check failed:")
-        for r in bad:
-            print(f"- {r['path']}: {r['status']}")
-        raise SystemExit(1)
+        for entry in failures:
+            print(f"- {entry['path']}: {entry['status']}")
+        return 1
 
-    print("Integrity check passed")
+    print(f"Integrity check passed: {len(results)} file(s)")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

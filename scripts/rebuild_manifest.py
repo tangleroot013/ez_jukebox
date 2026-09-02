@@ -16,8 +16,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from ez_jukebox.manifest import save_json
-from ez_jukebox.paths import MANIFEST_PATH, ensure_dirs
+from ez_jukebox.manifest import save_json  # noqa: E402
+from ez_jukebox.paths import MANIFEST_PATH, ensure_dirs  # noqa: E402
 
 
 AUDIO_EXTS = {".mp3", ".flac", ".ogg", ".m4a", ".opus", ".wav", ".aac"}
@@ -99,6 +99,7 @@ def main():
     print(f"Dupe groups: {dupes}")
     print(f"Elapsed:    {elapsed:.2f}s")
     print("Status:     successful")
+
 
 if __name__ == "__main__":
     main()
