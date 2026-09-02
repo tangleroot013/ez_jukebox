@@ -26,6 +26,12 @@ track and replenishes the queue so three tracks remain ready to play.
 The launcher uses `mpc` and requires a running user MPD service. Its log is at
 `~/.local/share/ez_jukebox/shuffle.log`.
 
+For lower idle resource usage, the MPD configuration disables continuous
+library rescans. Run `mpc update` after adding or removing music. Gapless
+playback, ReplayGain, and buffering remain enabled; these settings improve
+continuity without claiming bit-perfect output through the Crostini audio
+bridge.
+
 The installer and launcher honor `XDG_CONFIG_HOME` and `XDG_DATA_HOME`. An
 optional config file at `~/.config/ez_jukebox/shuffle.conf` can set
 `MPD_HOST`, `MPD_PORT`, and `PRELOAD_COUNT`; command-line options override
