@@ -119,3 +119,10 @@ stop:
 
 # Restart audio services
 restart: stop start
+
+# Canonical manifest-driven dedup (dry-run by default, reversible quarantine moves)
+dedup-execute:
+    python3 scripts/dedup_executor.py music_manifest.json
+
+dedup-execute-live:
+    EXECUTE=1 python3 scripts/dedup_executor.py music_manifest.json
