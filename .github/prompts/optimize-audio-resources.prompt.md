@@ -11,6 +11,11 @@ Improve the requested `ez_jukebox` audio behavior for lower CPU use, fewer wakeu
 
 This is a Bash/Python Linux and Crostini project using MPD and `mpc`, not a Node/TypeScript service. Prefer the existing scripts, `justfile`, MPD configuration, user systemd services, and offline shell tests. Do not introduce a new daemon, database, web service, or external dependency unless the request clearly requires it.
 
+The desktop shuffle launcher may apply `mpd_audiophile_setup.sh` once on its
+first real launch, guarded by an XDG data marker. Keep this bootstrap
+idempotent and ensure later clicks do not rewrite configuration or restart
+MPD. Offline tests may set `EZ_JUKEBOX_SKIP_AUDIO_SETUP=1`.
+
 ## Workflow
 
 1. Identify the nearest code that directly controls the requested behavior. Inspect only the relevant script, configuration, service, test, and nearby documentation.

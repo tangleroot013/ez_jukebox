@@ -6,6 +6,8 @@ umask 077
 CONFIG_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/ez_jukebox/shuffle.conf"
 DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/ez_jukebox"
 LOG="${DATA_DIR}/shuffle.log"
+AUDIO_SETUP_MARKER="${DATA_DIR}/audio-setup-v1.done"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 environment_preload="${PRELOAD_COUNT:-}"
 environment_host="${MPD_HOST:-}"
 environment_port="${MPD_PORT:-}"
@@ -85,6 +87,16 @@ log() {
 notify() {
     notify-send "$1" "$2" >/dev/null 2>&1 || true
 }
+
+if [[ ! -e "$AUDIO_SETUP_MARKER" && "${EZ_JUKEBOX_SKIP_AUDIO_SETUP:-0}" != "1" ]]; then
+    audio_setup="${EZ_JUKEBOX_AUDIO_SETUP:-$SCRIPT_DIR/../mpd_audiophile_setup.sh}"
+    if [[ -x "$audio_setup" ]] && bash "$audio_setup" >> "$LOG" 2>&1; then
+        : > "$AUDIO_SETUP_MARKER"
+        log "[info] first-launch audio setup completed"
+    else
+        log "[warn] first-launch audio setup unavailable or failed: $audio_setup"
+    fi
+fi
 
 for command_name in mpc; do
     if ! command -v "$command_name" >/dev/null 2>&1; then

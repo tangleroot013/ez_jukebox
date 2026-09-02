@@ -50,6 +50,11 @@ cat > "$TEMP_DIR/bin/notify-send" <<'MOCK_NOTIFY'
 printf '%s\n' "$*" >> "${MOCK_ROOT:?}/notifications"
 MOCK_NOTIFY
 chmod +x "$TEMP_DIR/bin/mpc" "$TEMP_DIR/bin/notify-send"
+cat > "$TEMP_DIR/audio-setup.sh" <<'MOCK_SETUP'
+#!/usr/bin/env bash
+printf '%s\n' setup-invoked >> "${XDG_DATA_HOME:?}/setup.log"
+MOCK_SETUP
+chmod +x "$TEMP_DIR/audio-setup.sh"
 : > "$TEMP_DIR/notifications"
 printf 'PRELOAD_COUNT=1\n' > "$TEMP_DIR/home/.config/ez_jukebox/shuffle.conf"
 
@@ -58,6 +63,7 @@ run_launcher() {
         XDG_CONFIG_HOME="$TEMP_DIR/home/.config" \
         XDG_DATA_HOME="$TEMP_DIR/home/.local/share" \
         MOCK_ROOT="$TEMP_DIR" \
+        EZ_JUKEBOX_AUDIO_SETUP="$TEMP_DIR/audio-setup.sh" \
         MPD_HOST='secret@mpd.example' \
         PRELOAD_COUNT=2 \
         PATH="$TEMP_DIR/bin:$PATH" \
@@ -69,5 +75,7 @@ run_launcher --preload 3
 [[ "$(<"$TEMP_DIR/state")" == play ]]
 run_launcher --lookahead 3
 [[ "$(wc -l < "$TEMP_DIR/queue")" -eq 5 ]]
+[[ "$(wc -l < "$TEMP_DIR/home/.local/share/setup.log")" -eq 1 ]]
+[[ -e "$TEMP_DIR/home/.local/share/ez_jukebox/audio-setup-v1.done" ]]
 ! grep -Fq 'secret@mpd.example' "$TEMP_DIR/home/.local/share/ez_jukebox/shuffle.log" "$TEMP_DIR/notifications"
 printf '%s\n' 'offline shuffle test passed'

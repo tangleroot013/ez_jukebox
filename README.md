@@ -126,6 +126,12 @@ The launcher honors `XDG_CONFIG_HOME` and `XDG_DATA_HOME`, strips passwords
 from `MPD_HOST` before diagnostics, and logs to
 `~/.local/share/ez_jukebox/shuffle.log`.
 
+On the first real icon click, the launcher runs
+`mpd_audiophile_setup.sh` once and records completion at
+`~/.local/share/ez_jukebox/audio-setup-v1.done`. Later clicks do not rewrite
+the MPD configuration or restart the service. Set
+`EZ_JUKEBOX_SKIP_AUDIO_SETUP=1` for an offline test or controlled deployment.
+
 ### Common commands
 
 | Command | Purpose |
