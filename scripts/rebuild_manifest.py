@@ -8,9 +8,17 @@ Usage:
   python3 scripts/rebuild_manifest.py                         # default roots
   python3 scripts/rebuild_manifest.py /root1 /root2 ...       # explicit roots
 """
-import hashlib, json, sys, time
-from pathlib import Path
 from collections import Counter
+import hashlib
+import sys
+import time
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from ez_jukebox.manifest import save_json
+from ez_jukebox.paths import MANIFEST_PATH, ensure_dirs
+
 
 AUDIO_EXTS = {".mp3", ".flac", ".ogg", ".m4a", ".opus", ".wav", ".aac"}
 DEFAULT_ROOTS = [
@@ -19,6 +27,7 @@ DEFAULT_ROOTS = [
 ]
 SKIP_DIRS = {"_quarantine", "_dedup_quarantine", "$RECYCLE.BIN"}
 
+
 def sha256(path: Path) -> str:
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -26,14 +35,19 @@ def sha256(path: Path) -> str:
             h.update(chunk)
     return h.hexdigest()
 
+
 def main():
-    roots = [Path(r) for r in sys.argv[1:]] if len(sys.argv) > 1 else DEFAULT_ROOTS
+    roots = (
+        [Path(r) for r in sys.argv[1:]]
+        if len(sys.argv) > 1
+        else DEFAULT_ROOTS
+    )
     roots = [r for r in roots if r.exists()]
-    
+
     if not roots:
         print(f"[error] no valid roots found -- checked: {DEFAULT_ROOTS}")
         sys.exit(1)
-        
+
     print(f"[info] scanning {len(roots)} root(s)")
     for r in roots:
         print(f"         {r}")
@@ -41,7 +55,7 @@ def main():
     manifest = {}
     scanned = skipped = errors = 0
     start_time = time.time()
-    
+
     for root in roots:
         for f in root.rglob("*"):
             if not f.is_file():
@@ -61,37 +75,30 @@ def main():
                 print(f"[error] {f}: {e}")
                 errors += 1
 
-    # Metadata wrap
-    output_data = {  
-        "metadata": {        
-            "version": "2.1",         
+    output_data = {
+        "metadata": {
+            "version": "2.1",
             "timestamp": time.ctime(),
             "root_count": len(roots)
-        },                
+        },
         "files": manifest
     }
 
-    # Write manifest to the project root, not the scripts folder        
-    out_path = Path("music_manifest.json")
-    if out_path.exists():                          
-        backup = out_path.with_suffix(".json.bak")
-        out_path.rename(backup)                
-        print(f"[ok] backup created: {backup}")
-
-    out_path.write_text(json.dumps(output_data, indent=2))
-                                          
-    elapsed = time.time() - start_time      
-    hash_counts = Counter(manifest.values())             
+    ensure_dirs()
+    out_path = MANIFEST_PATH
+    save_json(out_path, output_data)
+    elapsed = time.time() - start_time
+    hash_counts = Counter(manifest.values())
     dupes = sum(1 for c in hash_counts.values() if c > 1)
 
-    print(f"\n--- Manifest Summary ---")
-    print(f"Target:     {out_path.absolute()}")     
+    print("\n--- Manifest Summary ---")
+    print(f"Target:     {out_path.absolute()}")
     print(f"Indexed:    {len(manifest)}")
     print(f"Skipped:    {skipped}")
     print(f"Errors:     {errors}")
-    print(f"Dupe groups: {dupes}")      
-    print(f"Elapsed:    {elapsed:.2f}s")          
-    print(f"Status:     pyeof successful. Quack!")
+    print(f"Dupe groups: {dupes}")
+    print(f"Elapsed:    {elapsed:.2f}s")
+    print("Status:     successful")
 
 if __name__ == "__main__":
     main()

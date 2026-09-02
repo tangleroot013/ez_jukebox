@@ -4,6 +4,10 @@ verify:
     python3 scripts/check_integrity.py
     python3 scripts/dedup_triage.py
 
+test:
+    just test-shuffle
+    just verify-shuffle
+
 dedup-triage:
     python3 scripts/dedup_triage.py
 
