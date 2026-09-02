@@ -14,6 +14,7 @@ environment_port="${MPD_PORT:-}"
 PRELOAD_COUNT=3
 MPD_HOST=localhost
 MPD_PORT=6600
+REFILL_ONLY=0
 
 if [[ -f "$CONFIG_FILE" ]]; then
     # shellcheck source=/dev/null
@@ -34,6 +35,7 @@ Options:
   --port PORT       MPD port (default: configured MPD_PORT or 6600)
     --preload COUNT   Upcoming tracks to maintain (default: 3)
     --lookahead COUNT Alias for --preload
+    --refill           Top up the queue without advancing playback
   -h, --help        Show this help
 EOF
 }
@@ -54,6 +56,10 @@ while [[ $# -gt 0 ]]; do
             [[ $# -ge 2 ]] || { echo "Error: --preload needs a value." >&2; exit 2; }
             PRELOAD_COUNT="$2"
             shift 2
+            ;;
+        --refill)
+            REFILL_ONLY=1
+            shift
             ;;
         -h|--help)
             usage
@@ -124,7 +130,17 @@ current_pos="$(mpc current -f '%position%' 2>/dev/null || true)"
 queue_len="$(mpc playlist 2>/dev/null | wc -l)"
 state="$(mpc status 2>/dev/null | sed -n 's/^state: //p')"
 
-if [[ -z "$current_pos" || "$queue_len" -eq 0 || "$state" == "stop" ]]; then
+if [[ "$REFILL_ONLY" -eq 1 ]]; then
+    if [[ -n "$current_pos" && "$queue_len" -gt 0 && "$state" != "stop" ]]; then
+        upcoming=$((queue_len - current_pos))
+        needed=$((PRELOAD_COUNT - upcoming))
+        for ((index = 0; index < needed; index++)); do
+            track="$(mpc listall | grep -Fvx -f <(mpc playlist) | shuf -n 1 || true)"
+            [[ -n "$track" ]] && mpc -q add "$track"
+        done
+        log "queue maintained: ${current_pos} position, target lookahead $PRELOAD_COUNT"
+    fi
+elif [[ -z "$current_pos" || "$queue_len" -eq 0 || "$state" == "stop" ]]; then
     mapfile -t tracks < <(mpc listall | shuf -n "$((PRELOAD_COUNT + 1))")
     if [[ "${#tracks[@]}" -eq 0 ]]; then
         log "[error] MPD library is empty"

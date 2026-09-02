@@ -29,7 +29,7 @@ Write a Crostini-friendly MPD configuration and optionally restart MPD.
 
 Options:
   --library PATH    Music library path (default: ~/Music-library)
-    --quantum SAMPLES PipeWire quantum (default: 4096)
+    --quantum SAMPLES PipeWire quantum (256..8192, power of two; default: 4096)
   --no-restart      Write configuration without restarting MPD
   --dry-run         Show the target paths without changing files or services
   -h, --help        Show this help
@@ -67,8 +67,8 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if ! [[ "$PIPEWIRE_QUANTUM" =~ ^[1-9][0-9]*$ ]]; then
-    echo "Error: PipeWire quantum must be a positive integer." >&2
+if ! [[ "$PIPEWIRE_QUANTUM" =~ ^(256|512|1024|2048|4096|8192)$ ]]; then
+    echo "Error: PipeWire quantum must be a power of two from 256 to 8192." >&2
     exit 2
 fi
 

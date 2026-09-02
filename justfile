@@ -22,6 +22,9 @@ verify-shuffle:
 test-shuffle:
     bash test/verify_suite/test_shuffle.sh
 
+test-queue-watch:
+    bash -n scripts/ez_jukebox_queue_watch.sh
+
 recover:
     python3 scripts/recover.py
 

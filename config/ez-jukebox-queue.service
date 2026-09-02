@@ -1,0 +1,13 @@
+[Unit]
+Description=ez_jukebox Shuffle Queue Maintainer
+After=mpd.service
+Requires=mpd.service
+
+[Service]
+Type=simple
+ExecStart=__EZ_JUKEBOX_ROOT__/scripts/ez_jukebox_queue_watch.sh
+Restart=on-failure
+RestartSec=3s
+
+[Install]
+WantedBy=default.target

@@ -20,7 +20,7 @@ if ! command -v systemctl >/dev/null 2>&1; then
 fi
 
 systemctl --user daemon-reload
-for service_name in ez-jukebox-notify.service ez-jukebox-now-playing-api.service; do
+for service_name in ez-jukebox-notify.service ez-jukebox-now-playing-api.service ez-jukebox-queue.service; do
     systemctl --user enable --now "$service_name" || \
         printf '[warn] could not start %s; inspect systemctl --user status %s\n' "$service_name" "$service_name"
 done

@@ -70,23 +70,24 @@ bash mpd_audiophile_setup.sh
 ```
 
 The setup script writes `${XDG_CONFIG_HOME:-~/.config}/mpd/mpd.conf` and
-creates `~/Music-library`. The
-tracked [config/mpd.conf](config/mpd.conf) is a reference configuration for
-the same playback policy; adapt paths if your MPD service uses
-`${XDG_CONFIG_HOME:-~/.config}/mpd` instead. Runtime manifests and reports live under
-`${XDG_DATA_HOME:-~/.local/share}/ez_jukebox/`; they are not repository files.
+creates `~/Music-library`. The tracked [config/mpd.conf](config/mpd.conf) is a
+reference configuration for the same playback policy; adapt paths if your MPD
+service uses `${XDG_CONFIG_HOME:-~/.config}/mpd` instead. Runtime manifests and
+reports live under `${XDG_DATA_HOME:-~/.local/share}/ez_jukebox/`; they are not
+repository files.
 
-It also writes `${XDG_CONFIG_HOME:-~/.config}/pipewire/pipewire.conf.d/10-crostini-buffer.conf`
+It also writes
+`${XDG_CONFIG_HOME:-~/.config}/pipewire/pipewire.conf.d/10-crostini-buffer.conf`
 with a conservative 4096-sample quantum, about 85 ms at 48 kHz. The native
-Pulse socket is detected from `PULSE_SERVER` or
-`${XDG_RUNTIME_DIR}/pulse/native`; the setup never assumes UID 1000.
+Pulse socket is detected from `PULSE_SERVER` or `${XDG_RUNTIME_DIR}/pulse/native`;
+the setup never assumes UID 1000.
 
 Useful setup controls:
 
 ```bash
 bash mpd_audiophile_setup.sh --dry-run
 bash mpd_audiophile_setup.sh --library /path/to/music --no-restart
-bash mpd_audiophile_setup.sh --quantum 8192
+bash mpd_audiophile_setup.sh --quantum 8192  # higher latency fallback
 ```
 
 `--dry-run` changes nothing. `--no-restart` writes the configuration but leaves
@@ -118,6 +119,9 @@ bash scripts/install_user_services.sh
 The installer resolves the repository path at runtime, so the services work
 after cloning to a different directory. On systems without user systemd it
 still writes the units and prints a warning instead of failing the install.
+The installer also enables the queue maintainer, which listens for MPD player
+events and keeps three upcoming tracks queued. This is required for playback
+to continue automatically after the first four seeded tracks.
 
 Find **EZ Jukebox Shuffle** in the application menu and pin it to the shelf,
 taskbar, or favorites. The installer is self-locating and uses XDG paths for
@@ -288,6 +292,7 @@ the tree doubles as a file map.
 ├── config/
 │   ├── ez-jukebox-notify.service                   # User systemd unit for notifications.
 │   ├── ez-jukebox-now-playing-api.service          # User systemd unit for local now-playing API.
+│   ├── ez-jukebox-queue.service                    # Event-driven queue lookahead maintainer.
 │   ├── mpd.conf                                    # Tracked MPD playback/resource configuration.
 │   ├── pipewire/10-crostini-buffer.conf             # 4096-sample PipeWire focus-switch buffer drop-in.
 │   └── ncmpcpp/config                              # ncmpcpp terminal player configuration.
@@ -339,6 +344,7 @@ the tree doubles as a file map.
 │   ├── ez_tag_lint.py                               # Audits music metadata tags.
 │   ├── find_orphans_manifest.py                     # Compares media files with manifest entries.
 │   ├── install_shuffle_launcher.sh                  # Installs the XDG desktop launcher and icon.
+│   ├── ez_jukebox_queue_watch.sh                    # Blocks on MPD events and refills the queue.
 │   ├── install_user_services.sh                     # Installs checkout-portable user systemd units.
 │   ├── launch.sh                                    # General project launcher.
 │   ├── launch_ez_jukebox.sh                         # Starts the ez_jukebox application workflow.
