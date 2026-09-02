@@ -69,10 +69,11 @@ socket, selects the best available resampler, and restarts MPD when possible:
 bash mpd_audiophile_setup.sh
 ```
 
-The setup script writes `~/.mpd/mpd.conf` and creates `~/Music-library`. The
+The setup script writes `${XDG_CONFIG_HOME:-~/.config}/mpd/mpd.conf` and
+creates `~/Music-library`. The
 tracked [config/mpd.conf](config/mpd.conf) is a reference configuration for
 the same playback policy; adapt paths if your MPD service uses
-`~/.config/mpd` instead. Runtime manifests and reports live under
+`${XDG_CONFIG_HOME:-~/.config}/mpd` instead. Runtime manifests and reports live under
 `${XDG_DATA_HOME:-~/.local/share}/ez_jukebox/`; they are not repository files.
 
 Import existing music, or place new files in `~/Music/incoming` and run:

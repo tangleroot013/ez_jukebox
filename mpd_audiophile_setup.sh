@@ -10,8 +10,8 @@
 
 set -euo pipefail
 
-MPD_HOME="${HOME}/.mpd"
-LIB="${HOME}/Music-library"
+MPD_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/mpd"
+LIB="${EZ_JUKEBOX_LIBRARY:-$HOME/Music-library}"
 CONF="${MPD_HOME}/mpd.conf"
 RUNTIME="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 

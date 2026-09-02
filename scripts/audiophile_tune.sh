@@ -3,11 +3,11 @@
 # MPD → PulseAudio → CRAS chain; each layer absorbs VM scheduling jitter
 set -euo pipefail
 
-MPD_CONF="${HOME}/.config/mpd/mpd.conf"
-MPD_HOME="${HOME}/.mpd"
+MPD_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/mpd"
+MPD_CONF="${MPD_HOME}/mpd.conf"
 PULSE_CONF="${HOME}/.config/pulse/daemon.conf"
 OVERRIDE_DIR="${HOME}/.config/systemd/user/mpd.service.d"
-LIB="${HOME}/Music-library"
+LIB="${EZ_JUKEBOX_LIBRARY:-$HOME/Music-library}"
 RUNTIME="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
 mkdir -p "$(dirname "$MPD_CONF")" "$MPD_HOME/playlists" "$OVERRIDE_DIR"
