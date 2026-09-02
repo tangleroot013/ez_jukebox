@@ -9,5 +9,6 @@ case "$cmd" in
   validate) exec python3 "$(dirname "$0")/../src/config_validator.py" "$@" ;;
   resolve) exec python3 "$(dirname "$0")/../src/path_resolver.py" "$@" ;;
   tune) exec python3 "$(dirname "$0")/../src/optimize_playback.py" "$@" ;;
-  *) echo "usage: jukebox {play|organize|cleanup|build|validate|resolve|tune}"; exit 1 ;;
+  dedup) exec python3 "$(dirname "$0")/../scripts/dedup_executor.py" "$@" ;;
+  *) echo "usage: jukebox {play|organize|cleanup|build|validate|resolve|tune|dedup}"; exit 1 ;;
 esac
