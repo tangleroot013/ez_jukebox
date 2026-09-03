@@ -2,6 +2,14 @@
 # ez_jukebox_shuffle.sh - start or advance the shelf player's managed queue
 set -euo pipefail
 
+LOCKFILE="${HOME}/.local/share/ez_jukebox/shuffle.lock"
+mkdir -p "$(dirname "$LOCKFILE")"
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+    echo "[skip] another ez_jukebox_shuffle instance is already running" >&2
+    exit 0
+fi
+
 DATA_DIR="${HOME}/.local/share/ez_jukebox"
 LOG="${DATA_DIR}/shuffle.log"
 STATE="${DATA_DIR}/shuffle-current"
