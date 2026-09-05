@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=ez_jukebox: Force Stop
+Comment=Kill stuck ez_jukebox / MPD processes without resetting the Chromebook
+Exec=@REPO@/scripts/ez_jukebox_stop.sh
+Icon=multimedia-audio-player
+Terminal=false
+Categories=AudioVideo;Audio;

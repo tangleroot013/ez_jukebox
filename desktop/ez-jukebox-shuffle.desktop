@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=ez_jukebox Shuffle
+Comment=Shuffle and skip to a random track
+Exec=@REPO@/scripts/ez_jukebox_shuffle.sh
+Icon=@REPO@/assets/ez_jukebox_icon.png
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+StartupNotify=false

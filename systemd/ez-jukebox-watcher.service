@@ -1,0 +1,13 @@
+[Unit]
+Description=ez_jukebox continuous queue watcher (auto-refill so playback never stops)
+After=mpd.service
+Wants=mpd.service
+
+[Service]
+Type=simple
+ExecStart=@REPO@/scripts/ez_jukebox_watcher.sh
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=default.target

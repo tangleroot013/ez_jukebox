@@ -1,0 +1,8 @@
+[Unit]
+Description=ez_jukebox Auto-Import Task
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/home-data/github_projects/ez_jukebox
+ExecStart=/usr/bin/python3 scripts/rebuild_manifest.py
+ExecStartPost=/usr/bin/mpc update

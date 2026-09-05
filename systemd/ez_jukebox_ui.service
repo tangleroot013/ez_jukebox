@@ -1,0 +1,12 @@
+[Unit]
+Description=ez_jukebox Web Interface
+After=network.target mpd.service
+
+[Service]
+ExecStart=/usr/bin/python3 @HOME@/github_projects/ez_jukebox/scripts/mpd_web_ui.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target

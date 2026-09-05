@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch ~/Music-library for changes to auto-import
+
+[Path]
+PathChanged=%h/Music-library
+Unit=ez-jukebox-import.service
+
+[Install]
+WantedBy=default.target

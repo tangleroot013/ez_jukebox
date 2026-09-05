@@ -126,3 +126,37 @@ dedup-execute:
 
 dedup-execute-live:
     EXECUTE=1 python3 scripts/dedup_executor.py music_manifest.json
+
+# >>> ez_jukebox desktop install >>>
+install-desktop:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	mkdir -p ~/.local/share/applications
+	for f in desktop/*.desktop; do
+	    name=$(basename "$f")
+	    sed -e "s|@REPO@|$PWD|g" -e "s|@HOME@|$HOME|g" "$f" > ~/.local/share/applications/"$name"
+	done
+	update-desktop-database ~/.local/share/applications 2>/dev/null || true
+	echo "Installed $(ls desktop/*.desktop | wc -l) desktop entries"
+# <<< ez_jukebox desktop install <<<
+
+
+# >>> ez_jukebox service install >>>
+install-service:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	if [ ! -e ~/github_projects ]; then
+	    ln -s ~/home-data/github_projects ~/github_projects
+	fi
+	mkdir -p ~/.config/systemd/user
+	for f in systemd/*.service systemd/*.path; do
+	    [ -e "$f" ] || continue
+	    name=$(basename "$f")
+	    sed -e "s|@REPO@|$PWD|g" -e "s|@HOME@|$HOME|g" "$f" > ~/.config/systemd/user/"$name"
+	done
+	systemctl --user daemon-reload
+	for u in ez_jukebox_ui.service ez-jukebox-notify.service ez-jukebox-now-playing-api.service ez-jukebox-watcher.service ez-jukebox-import.path; do
+	    systemctl --user enable --now "$u"
+	done
+	echo "Installed 6 units, enabled 5 (import.service runs on-demand via the .path watcher)"
+# <<< ez_jukebox service install <<<
