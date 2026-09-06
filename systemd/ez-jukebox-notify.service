@@ -1,11 +1,11 @@
 [Unit]
-Description=ez_jukebox Notification & Infobox Daemon
+Description=ez_jukebox Notification and Infobox Daemon
 After=mpd.service
 Requires=mpd.service
 
 [Service]
 Type=simple
-ExecStart=@REPO@/scripts/ez_notify.sh
+ExecStart=/home/tangleroot013/home-data/github_projects/ez_jukebox/scripts/ez_notify.sh
 Restart=on-failure
 RestartSec=5s
 
