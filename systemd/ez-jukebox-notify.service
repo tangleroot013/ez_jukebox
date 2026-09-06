@@ -1,16 +1,13 @@
 [Unit]
-Description=ez_jukebox MPD Notification Listener
-After=mpd.service pipewire.service
-Wants=mpd.service
+Description=ez_jukebox Notification & Infobox Daemon
+After=mpd.service
+Requires=mpd.service
 
 [Service]
 Type=simple
-Environment="MPD_HOST=127.0.0.1"
-Environment="MPD_PORT=6600"
-WorkingDirectory=@REPO@
-ExecStart=/usr/bin/python3 @REPO@/scripts/mpd_notify.py
+ExecStart=@REPO@/scripts/ez_notify.sh
 Restart=on-failure
-RestartSec=3
+RestartSec=5s
 
 [Install]
 WantedBy=default.target
