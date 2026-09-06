@@ -9,7 +9,7 @@ Environment=EZ_NP_API_PORT=8765
 # Use the same file your daemon writes:
 Environment=EZ_NP_API_FILE=%h/.local/share/ez_jukebox/now_playing.json
 
-ExecStart=%h/github_projects/ez_jukebox/scripts/ez_now_playing_api.py --host ${EZ_NP_API_HOST} --port ${EZ_NP_API_PORT} --file ${EZ_NP_API_FILE}
+ExecStart=__EZ_JUKEBOX_ROOT__/scripts/ez_now_playing_api.py --host ${EZ_NP_API_HOST} --port ${EZ_NP_API_PORT} --file ${EZ_NP_API_FILE}
 Restart=on-failure
 RestartSec=1
 

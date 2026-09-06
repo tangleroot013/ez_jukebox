@@ -2,22 +2,31 @@
 # audiophile_tune.sh - Crostini skip elimination via layered buffer tuning
 # MPD → PulseAudio → CRAS chain; each layer absorbs VM scheduling jitter
 set -euo pipefail
+umask 077
 
-MPD_CONF="${HOME}/.config/mpd/mpd.conf"
-MPD_HOME="${HOME}/.mpd"
+MPD_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/mpd"
+MPD_CONF="${MPD_HOME}/mpd.conf"
 PULSE_CONF="${HOME}/.config/pulse/daemon.conf"
-OVERRIDE_DIR="${HOME}/.config/systemd/user/mpd.service.d"
-LIB="${HOME}/Music-library"
+PIPEWIRE_CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/pipewire/pipewire.conf.d"
+PIPEWIRE_CONF="${PIPEWIRE_CONF_DIR}/10-crostini-buffer.conf"
+LIB="${EZ_JUKEBOX_LIBRARY:-$HOME/Music-library}"
 RUNTIME="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+PIPEWIRE_QUANTUM="${EZ_JUKEBOX_PIPEWIRE_QUANTUM:-4096}"
 
-mkdir -p "$(dirname "$MPD_CONF")" "$MPD_HOME/playlists" "$OVERRIDE_DIR"
+if ! [[ "$PIPEWIRE_QUANTUM" =~ ^[1-9][0-9]*$ ]]; then
+    echo "Error: EZ_JUKEBOX_PIPEWIRE_QUANTUM must be a positive integer." >&2
+    exit 2
+fi
+
+mkdir -p "$(dirname "$MPD_CONF")" "$MPD_HOME/playlists"
+mkdir -p "$PIPEWIRE_CONF_DIR"
 
 # detect pulse socket
 SERVER_LINE=""
 [[ -S "${RUNTIME}/pulse/native" ]] && \
     SERVER_LINE="    server          \"unix:${RUNTIME}/pulse/native\""
 
-echo "[1/4] writing optimised mpd.conf..."
+echo "[1/5] writing optimised mpd.conf..."
 cat > "$MPD_CONF" <<CONF
 music_directory     "${LIB}"
 playlist_directory  "${MPD_HOME}/playlists"
@@ -33,11 +42,9 @@ filesystem_charset  "UTF-8"
 auto_update         "no"
 
 # ── Crostini buffer tuning ──────────────────────────────────────────────────
-# CrosVM scheduler jitter can run 20-80ms; buffers must exceed worst-case gap.
-audio_buffer_size   "16384"   # 16 MB decode ring buffer
-buffer_before_play  "15%"     # pre-fill 2.4 MB before first frame
+# max_output_buffer_size is supported by modern MPD builds.
+max_output_buffer_size     "16384"
 
-gapless_mp3_playback      "yes"
 replaygain                "auto"
 replaygain_preamp         "0"
 replaygain_missing_preamp "0"
@@ -57,10 +64,22 @@ audio_output {
 ${SERVER_LINE}
 }
 CONF
-echo "[ok] mpd.conf: 16MB decode, 600ms sink buffer, 32KB fragments"
+echo "[ok] mpd.conf: 16MB output buffer, 600ms sink buffer, 32KB fragments"
 
 echo ""
-echo "[2/4] tuning PulseAudio daemon..."
+echo "[2/5] writing PipeWire quantum drop-in..."
+cat > "$PIPEWIRE_CONF" <<PIPEWIRE
+# Crostini focus-switch resilience: configured quantum samples.
+context.properties = {
+    default.clock.min-quantum = ${PIPEWIRE_QUANTUM}
+    default.clock.quantum = ${PIPEWIRE_QUANTUM}
+}
+PIPEWIRE
+chmod 600 "$PIPEWIRE_CONF"
+echo "[ok] PipeWire quantum: ${PIPEWIRE_QUANTUM} samples"
+
+echo ""
+echo "[3/5] tuning PulseAudio daemon..."
 mkdir -p "$(dirname "$PULSE_CONF")"
 cat > "$PULSE_CONF" <<PULSE
 # Crostini audio stability -- larger fragments absorb VM preemption spikes
@@ -69,8 +88,6 @@ default-sample-format        = s16le
 default-fragments            = 8
 default-fragment-size-msec   = 75
 
-high-priority                = yes
-nice-level                   = -11
 realtime-scheduling          = no
 
 avoid-resampling             = no
@@ -78,20 +95,10 @@ resample-method              = speex-float-3
 
 exit-idle-time               = -1
 PULSE
-echo "[ok] pulse daemon.conf: 8 x 75ms = 600ms fragment buffer, nice=-11"
+echo "[ok] pulse daemon.conf: 8 x 75ms = 600ms fragment buffer"
 
 echo ""
-echo "[3/4] MPD systemd priority override..."
-cat > "${OVERRIDE_DIR}/50-audiophile.conf" <<UNIT
-[Service]
-Nice=-10
-Environment=PULSE_LATENCY_MSEC=300
-Environment=PULSE_PROP_media.role=music
-UNIT
-echo "[ok] override: Nice=-10, PULSE_LATENCY_MSEC=300, media.role=music"
-
-echo ""
-echo "[4/4] applying..."
+echo "[4/5] applying..."
 systemctl --user daemon-reload
 
 # Restart PulseAudio to pick up daemon.conf
@@ -107,7 +114,7 @@ fi
 systemctl --user restart mpd && sleep 1
 
 echo ""
-echo "=== Verification ==="
+echo "[5/5] === Verification ==="
 systemctl --user is-active mpd && echo "[ok] MPD active" || echo "[FAIL] MPD not running"
 mpc status 2>/dev/null | head -3 || echo "[warn] mpc: no response"
 mpc outputs 2>/dev/null | head -5 || true
@@ -115,13 +122,11 @@ mpc outputs 2>/dev/null | head -5 || true
 echo ""
 cat <<SUMMARY
 === Buffer chain (Crostini) ===
-  MPD decode ring:    16 MB
-  MPD pre-fill:       15% (2.4 MB)
-  PulseAudio sink:    600 ms  (buffer_time)
-  PA fragments:       8 × 75 ms = 600 ms
-  PULSE_LATENCY_MSEC: 300
-  MPD nice:          -10
-  PA nice:           -11
+    MPD output buffer:   16 MB
+    PulseAudio sink:     600 ms  (buffer_time)
+    PA fragments:        8 × 75 ms = 600 ms
+    PipeWire quantum:    ${PIPEWIRE_QUANTUM} samples
+    RTKit/realtime:      disabled; relies on buffering instead
 
 === If skips persist ===
   1. tail -f ~/.mpd/mpd.log   # look for "buffer underrun"

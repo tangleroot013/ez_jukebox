@@ -2,13 +2,16 @@
 # ==============================================================================
 # Application Launcher Entrypoint
 # ==============================================================================
-set -e
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 # Clear screen for clean presentation
 clear
 
 # Render quick hint reference
-python3 show_hints.py
+python3 "$SCRIPT_DIR/show_hints.py"
 
 # Ensure underlying MPD service is running
 if ! systemctl --user is-active --quiet mpd; then
@@ -19,4 +22,4 @@ fi
 echo -e "\033[32m✅ Service status verified. System ready.\033[0m\n"
 
 echo "🚀 Starting tray monitor..."
-python3 monitor_jukebox.py &
+python3 "$SCRIPT_DIR/monitor_jukebox.py" &

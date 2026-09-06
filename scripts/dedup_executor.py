@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-dedup_executor.py - dry-run-by-default dedup executor driven by music_manifest.json
+dedup_executor.py - dry-run-by-default executor driven by music_manifest.json
 
 For each hash group with >1 file, picks one "keeper" and moves the rest
 (never deletes) into LIBRARY_ROOT/_dedup_quarantine/, mirroring relative path.
@@ -15,14 +15,22 @@ Keeper selection (first rule producing a unique winner wins):
 
 Usage:
   python3 dedup_executor.py music_manifest.json                 # dry run
-  EXECUTE=1 python3 dedup_executor.py music_manifest.json        # actually move
-  python3 dedup_executor.py music_manifest.json --no-tag-check   # skip mutagen pass
-  python3 dedup_executor.py music_manifest.json --limit=50       # preview on subset
-  python3 dedup_executor.py music_manifest.json --debug-shape    # inspect manifest structure only
+    EXECUTE=1 python3 dedup_executor.py music_manifest.json  # actually move
+    python3 dedup_executor.py music_manifest.json --no-tag-check
+            # skip mutagen
+    python3 dedup_executor.py music_manifest.json --limit=50  # preview subset
+    python3 dedup_executor.py music_manifest.json --debug-shape
+            # inspect shape
 """
-import json, os, re, sys, shutil, time
-from pathlib import Path
+
 from collections import defaultdict
+import json
+import os
+import re
+import shutil
+import sys
+import time
+from pathlib import Path
 
 HASH_RE = re.compile(r"^[0-9a-f]{32,64}$", re.IGNORECASE)
 
@@ -30,7 +38,10 @@ HASH_RE = re.compile(r"^[0-9a-f]{32,64}$", re.IGNORECASE)
 def looks_like_hash(s):
     return isinstance(s, str) and bool(HASH_RE.match(s))
 
-LIBRARY_ROOT = Path(os.environ.get("LIBRARY_ROOT", str(Path.home() / "Music-library"))).resolve()
+
+LIBRARY_ROOT = Path(
+    os.environ.get("LIBRARY_ROOT", str(Path.home() / "Music-library"))
+).resolve()
 QUARANTINE = LIBRARY_ROOT / "_dedup_quarantine"
 EXECUTE = os.environ.get("EXECUTE", "0") == "1"
 NO_TAG_CHECK = "--no-tag-check" in sys.argv
@@ -39,7 +50,9 @@ LIMIT = None
 for a in sys.argv[1:]:
     if a.startswith("--limit="):
         LIMIT = int(a.split("=", 1)[1])
-manifest_arg = next((a for a in sys.argv[1:] if not a.startswith("--")), "music_manifest.json")
+manifest_arg = next(
+    (a for a in sys.argv[1:] if not a.startswith("--")), "music_manifest.json"
+)
 MANIFEST = Path(manifest_arg)
 
 
@@ -60,7 +73,10 @@ def debug_shape(data):
         print(f"[debug] top-level key count: {len(data)}")
         for k in list(data.keys())[:8]:
             v = data[k]
-            print(f"[debug]   key={k!r} type={type(v).__name__} preview={repr(v)[:100]}")
+            print(
+                f"[debug]   key={k!r} type={type(v).__name__} "
+                f"preview={repr(v)[:100]}"
+            )
     elif isinstance(data, list):
         print(f"[debug] top-level list length: {len(data)}")
         for item in data[:3]:
@@ -77,7 +93,10 @@ def load_groups(data):
         for p, h in data["files"].items():
             if p and h:
                 groups[h].append(p)
-        print(f"[info] detected wrapped manifest shape (metadata + files) -- {len(data['files']):,} files indexed")
+        print(
+            "[info] detected wrapped manifest shape (metadata + files) -- "
+            f"{len(data['files']):,} files indexed"
+        )
         return groups
 
     if isinstance(data, dict):
@@ -101,17 +120,32 @@ def load_groups(data):
                     if p and h:
                         groups[h].append(p)
             else:
-                print(f"[error] ambiguous orientation -- sample key={sample_key!r} val={sample_val!r}")
-                print("Neither side matches a hash pattern cleanly. Rerun with --debug-shape to inspect.")
+                print(
+                    "[error] ambiguous orientation -- "
+                    f"sample key={sample_key!r} val={sample_val!r}"
+                )
+                print(
+                    "Neither side matches a hash pattern cleanly. "
+                    "Rerun with --debug-shape to inspect."
+                )
                 sys.exit(1)
         elif isinstance(sample_val, dict):
             for p, meta in data.items():
-                h = meta.get("hash") or meta.get("sha256") or meta.get("content_hash")
+                h = (
+                    meta.get("hash")
+                    or meta.get("sha256")
+                    or meta.get("content_hash")
+                )
                 if p and h:
                     groups[h].append(p)
         else:
-            print(f"[error] unrecognized manifest shape (dict values are {type(sample_val)})")
-            print("Rerun with --debug-shape to inspect the manifest structure.")
+            print(
+                "[error] unrecognized manifest shape "
+                f"(dict values are {type(sample_val)})"
+            )
+            print(
+                "Rerun with --debug-shape to inspect the manifest structure."
+            )
             sys.exit(1)
     elif isinstance(data, list):
         for e in data:
@@ -145,6 +179,7 @@ def tag_richness(p: str) -> int:
         return 0
     try:
         from mutagen import File as MutagenFile
+
         audio = MutagenFile(p, easy=True)
         if not audio or not audio.tags:
             return 0
@@ -187,17 +222,34 @@ def main():
     groups = load_groups(data)
     total_indexed = sum(len(v) for v in groups.values())
     if total_indexed == 0:
-        print("[warn] 0 entries indexed from manifest -- shape may not be recognized.")
-        print("       Rerun with --debug-shape to inspect the manifest structure before assuming there are no duplicates.")
+        print(
+            "[warn] 0 entries indexed from manifest -- shape may not be "
+            "recognized."
+        )
+        print(
+            "       Rerun with --debug-shape to inspect the manifest "
+            "structure before assuming there are no duplicates."
+        )
 
-    dupe_groups = {h: paths for h, paths in groups.items() if len(paths) > 1}
+    dupe_groups = {
+        hash_value: paths
+        for hash_value, paths in groups.items()
+        if len(paths) > 1
+    }
     items = list(dupe_groups.items())
     if LIMIT:
         items = items[:LIMIT]
 
-    print(f"[info] {len(items)}/{len(dupe_groups)} hash groups queued -- mode={'EXECUTE' if EXECUTE else 'DRY-RUN'}")
+    mode = "EXECUTE" if EXECUTE else "DRY-RUN"
+    print(
+        f"[info] {len(items)}/{len(dupe_groups)} hash groups queued -- "
+        f"mode={mode}"
+    )
     if not NO_TAG_CHECK:
-        print("[info] tag-richness check enabled (slower); pass --no-tag-check to skip")
+        print(
+            "[info] tag-richness check enabled (slower); "
+            "pass --no-tag-check to skip"
+        )
 
     planned = skipped = missing = errors = 0
     reclaimed_bytes = 0
@@ -215,7 +267,11 @@ def main():
                 missing += 1
                 continue
             try:
-                rel = src.resolve().relative_to(LIBRARY_ROOT) if is_canonical(str(src)) else Path(src.name)
+                rel = (
+                    src.resolve().relative_to(LIBRARY_ROOT)
+                    if is_canonical(str(src))
+                    else Path(src.name)
+                )
             except Exception:
                 rel = Path(src.name)
             dest = QUARANTINE / rel
@@ -245,10 +301,16 @@ def main():
     elapsed = time.time() - start
     mb = reclaimed_bytes / (1024 * 1024)
     action = "quarantined" if EXECUTE else "planned"
-    print(f"\nSummary: {action}={planned} skipped={skipped} missing={missing} errors={errors} "
-          f"reclaimed≈{mb:.1f}MB elapsed={elapsed:.1f}s mode={'EXECUTE' if EXECUTE else 'DRY-RUN'}")
+    print(
+        f"\nSummary: {action}={planned} skipped={skipped} "
+        f"missing={missing} errors={errors} reclaimed≈{mb:.1f}MB "
+        f"elapsed={elapsed:.1f}s mode={mode}"
+    )
     if not EXECUTE and planned:
-        print(f"Rerun with EXECUTE=1 to actually move {planned} duplicate files into {QUARANTINE}")
+        print(
+            f"Rerun with EXECUTE=1 to move {planned} duplicate files into "
+            f"{QUARANTINE}"
+        )
 
 
 if __name__ == "__main__":

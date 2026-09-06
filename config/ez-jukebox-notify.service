@@ -5,7 +5,7 @@ Requires=mpd.service
 
 [Service]
 Type=simple
-ExecStart=%h/github_projects/ez_jukebox/scripts/ez_notify.sh
+ExecStart=__EZ_JUKEBOX_ROOT__/scripts/ez_notify.sh
 Restart=on-failure
 RestartSec=5s
 

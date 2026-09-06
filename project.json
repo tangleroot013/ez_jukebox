@@ -3,19 +3,20 @@
   "kind": "internal-project-manifest",
   "description": "Chromebook Crostini music library automation: deduplication + MPD integration + helper tooling.",
   "repoRoot": ".",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "directories": {
     "bin": "bin",
     "config": "config",
-    "docs": "docs",
+    "github": ".github",
     "scripts": "scripts",
     "src": "src",
     "test": "test"
   },
   "files": {
     "readme": "README.md",
-    "manifest": "music_manifest.json",
-    "dedupDuplicatesList": "duplicates.txt"
+    "manifest": "${XDG_DATA_HOME:-$HOME/.local/share}/ez_jukebox/music_manifest.json",
+    "dedupDuplicatesList": "duplicates.txt",
+    "shuffleTest": "test/verify_suite/test_shuffle.sh"
   },
   "buildAndRun": {
     "orchestration": {
@@ -38,7 +39,7 @@
     }
   },
   "qualityAndVerification": {
-    "primaryTarget": "just verify",
+    "primaryTarget": "just test",
     "testsPath": "test"
   },
   "runtimeSignals": {
@@ -50,7 +51,7 @@
       "mpc listall"
     ],
     "expectedArtifacts": [
-      "music_manifest.json",
+      "${XDG_DATA_HOME:-$HOME/.local/share}/ez_jukebox/music_manifest.json",
       "duplicates.txt",
       "orphans_list.txt",
       "reports/integrity_report.json",
