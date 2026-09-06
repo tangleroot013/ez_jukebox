@@ -1,84 +1,73 @@
 #!/usr/bin/env python3
-"""EZ Jukebox Track Selector (DEBUG MODE)"""
-
-import argparse, json, os, random, sys
+import json
+import sys
+import random
+import argparse
 from pathlib import Path
-from typing import Optional
 
-def select_track(manifest_path: Path, history_file: Path, max_history: int, output_file: Optional[Path] = None, debug: bool = False) -> None:
-    """Selects an unplayed, verified audio file from the manifest and logs it to history."""
-    if not manifest_path.exists():
-        print(f"[DEBUG] Manifest not found: {manifest_path}", file=sys.stderr)
-        sys.exit(1)
-
+def select_track(manifest_path: Path, history_path: Path, max_history: int, output_path: Path = None, debug: bool = False) -> None:
     try:
-        with open(manifest_path, "r", encoding="utf-8") as f:
+        with open(manifest_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        tracks = data if isinstance(data, list) else data.get("tracks", [])
-        if debug:
-            print(f"[DEBUG] Loaded {len(tracks)} tracks from manifest", file=sys.stderr)
     except Exception as e:
-        print(f"[DEBUG] JSON parse error: {e}", file=sys.stderr)
+        if debug:
+            print(f"[DEBUG] Failed to load manifest: {e}", file=sys.stderr)
         sys.exit(1)
 
-    history = []
-    if history_file.exists():
-        try:
-            with open(history_file, "r", encoding="utf-8") as f:
-                history = [line.strip() for line in f if line.strip()]
-            if debug:
-                print(f"[DEBUG] Loaded {len(history)} history entries", file=sys.stderr)
-        except Exception as e:
-            print(f"[DEBUG] History read error: {e}", file=sys.stderr)
-            history = []
+    # Extract file paths from the "files" dict
+    all_tracks = list(data.get('files', {}).keys())
+    
+    if debug:
+        print(f"[DEBUG] Loaded {len(all_tracks)} tracks from manifest", file=sys.stderr)
 
-    candidates = [
-        t["file"]
-        for t in tracks
-        if isinstance(t, dict)
-        and t.get("file")
-        and os.path.isfile(t["file"])
-        and os.access(t["file"], os.R_OK)
-        and t["file"] not in history
-    ]
+    # Load history
+    history = set()
+    if history_path.exists():
+        try:
+            with open(history_path, 'r', encoding='utf-8') as f:
+                history = {line.strip() for line in f if line.strip()}
+        except Exception as e:
+            if debug:
+                print(f"[DEBUG] Failed to load history: {e}", file=sys.stderr)
+
+    if debug:
+        print(f"[DEBUG] History size: {len(history)}", file=sys.stderr)
+
+    # Get candidates (tracks not in recent history)
+    candidates = [t for t in all_tracks if t not in history]
 
     if debug:
         print(f"[DEBUG] Found {len(candidates)} candidates (after history filter)", file=sys.stderr)
 
-    if not candidates and history:
-        history = history[len(history) // 2 :]
-        candidates = [
-            t["file"]
-            for t in tracks
-            if isinstance(t, dict)
-            and t.get("file")
-            and os.path.isfile(t["file"])
-            and os.access(t["file"], os.R_OK)
-            and t["file"] not in history
-        ]
-        if debug:
-            print(f"[DEBUG] After pruning history: {len(candidates)} candidates", file=sys.stderr)
-
     if not candidates:
-        print("[DEBUG] No candidates available!", file=sys.stderr)
+        if debug:
+            print("[DEBUG] No candidates available!", file=sys.stderr)
         sys.exit(1)
 
+    # Select random track
     selected = random.choice(candidates)
-    history.append(selected)
-    history = history[-max_history:]
+
+    if debug:
+        print(f"[DEBUG] Selected: {selected}", file=sys.stderr)
+
+    # Append to history, keep only last max_history entries
+    history_list = list(history) + [selected]
+    history_list = history_list[-max_history:]
 
     try:
-        history_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(history_file, "w", encoding="utf-8") as f:
-            f.write("\n".join(history) + "\n")
-    except Exception:
-        pass
+        history_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(history_path, 'w', encoding='utf-8') as f:
+            f.write('\n'.join(history_list) + '\n')
+    except Exception as e:
+        if debug:
+            print(f"[DEBUG] Failed to write history: {e}", file=sys.stderr)
 
-    if output_file:
+    # Write output file if requested
+    if output_path:
         try:
-            output_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(output_file, "w", encoding="utf-8") as f:
-                f.write(selected + "\n")
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(selected + '\n')
         except Exception:
             pass
 
