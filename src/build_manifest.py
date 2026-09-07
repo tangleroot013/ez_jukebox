@@ -54,8 +54,8 @@ def build_manifest(library_path, output_path):
 
 def write_manifest(manifest, output_path):
     try:
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(manifest, f, indent=2, ensure_ascii=False)
+        from ez_jukebox.atomic_io import atomic_write_json
+        atomic_write_json(output_path, manifest)
         print(f"💾 Manifest written to: {output_path}")
         return True
     except Exception as e:
@@ -65,7 +65,7 @@ def write_manifest(manifest, output_path):
 def main():
     parser = argparse.ArgumentParser(description="ez_jukebox Manifest Builder")
     parser.add_argument("--library-path", default="/mnt/chromeos/removable/CarterMedia", help="Path to audio library")
-    parser.add_argument("--output-path", default="music_manifest.json", help="Path to output JSON manifest")
+    parser.add_argument("--output-path", default="legacy_manifest.json", help="Path to output JSON manifest (kept separate from the canonical wrapped music_manifest.json)")
     args = parser.parse_args()
 
     manifest = build_manifest(args.library_path, args.output_path)

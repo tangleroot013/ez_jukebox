@@ -105,7 +105,8 @@ def load_manifest(path: Path):
 
 
 def save_manifest(path: Path, manifest):
-    path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
+    from ez_jukebox.atomic_io import atomic_write_json
+    atomic_write_json(path, manifest)
 
 
 def process_file(src_file, album_fallback, dest, manifest, seen_hashes, execute, stats, cleanup=False):
@@ -152,7 +153,7 @@ def main():
     ap = argparse.ArgumentParser(description="Extract + dedupe + tag-organize purchased tracks (loose files and zips)")
     ap.add_argument("--root", type=Path, default=Path("/mnt/chromeos/MyFiles/Downloads"))
     ap.add_argument("--dest", type=Path, default=Path.home() / "Music")
-    ap.add_argument("--manifest", type=Path, default=Path.home() / "music_manifest.json")
+    ap.add_argument("--manifest", type=Path, default=Path.home() / "organize_manifest.json")
     ap.add_argument("--execute", action="store_true", help="Actually extract/copy. Default is scan-only.")
     args = ap.parse_args()
 

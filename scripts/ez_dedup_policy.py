@@ -79,8 +79,12 @@ def evaluate_duplicates():
         "recommendations": results
     }
 
-    with open(REPORT_FILE, "w", encoding="utf-8") as f:
+    tmp_file = REPORT_FILE.with_suffix(REPORT_FILE.suffix + ".tmp")
+    with open(tmp_file, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_file, REPORT_FILE)
 
     print(f"[ez_jukebox] Evaluated {len(results)} duplicate group(s).")
     print(f"Policy report generated at: {REPORT_FILE}")

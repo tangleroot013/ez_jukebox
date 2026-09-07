@@ -61,14 +61,15 @@ def load_manifest(path: Path):
 
 
 def save_manifest(path: Path, manifest):
-    path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
+    from ez_jukebox.atomic_io import atomic_write_json
+    atomic_write_json(path, manifest)
 
 
 def main():
     ap = argparse.ArgumentParser(description="Flatten + dedupe + tag-organize a music library")
     ap.add_argument("--source", required=True, type=Path)
     ap.add_argument("--dest", required=True, type=Path)
-    ap.add_argument("--manifest", type=Path, default=Path("music_manifest.json"))
+    ap.add_argument("--manifest", type=Path, default=Path("organize_manifest.json"))
     ap.add_argument("--execute", action="store_true", help="Actually copy files. Default is dry-run.")
     ap.add_argument("--move", action="store_true", help="Delete source after verified copy (implies --execute).")
     args = ap.parse_args()

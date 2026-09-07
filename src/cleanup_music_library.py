@@ -115,7 +115,7 @@ def fix_tags(path: Path, artist_hint: str, album_hint: str, execute: bool) -> bo
 def main():
     ap = argparse.ArgumentParser(description="Post-organize cleanup + verify + tag-fix pass")
     ap.add_argument("--music-dir", type=Path, default=Path.home() / "Music")
-    ap.add_argument("--manifest", type=Path, default=Path.home() / "music_manifest.json")
+    ap.add_argument("--manifest", type=Path, default=Path.home() / "organize_manifest.json")
     ap.add_argument("--execute", action="store_true", help="Actually delete/fix. Default is report-only.")
     args = ap.parse_args()
 
@@ -212,7 +212,8 @@ def main():
                 stats["manifest_orphans"] += 1
                 print(f"ORPHAN-ENTRY  {dest}  (no longer on disk, dropping from manifest)")
         if args.execute:
-            args.manifest.write_text(json.dumps(cleaned, indent=2, sort_keys=True))
+            from ez_jukebox.atomic_io import atomic_write_json
+            atomic_write_json(args.manifest, cleaned)
 
     print(f"\nSummary: stray={stats['stray']} broken={stats['broken']} duplicates={stats['duplicates']} "
           f"tag_fixed={stats['tag_fixed']} dirs_pruned={stats['dirs_pruned']} "
